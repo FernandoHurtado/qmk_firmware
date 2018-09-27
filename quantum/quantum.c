@@ -147,10 +147,8 @@ void reset_keyboard(void) {
 #if defined(MIDI_ENABLE) && defined(MIDI_BASIC)
   process_midi_all_notes_off();
 #endif
-#ifdef AUDIO_ENABLE
-  #ifndef NO_MUSIC_MODE
-    music_all_notes_off();
-  #endif
+#if defined(AUDIO_ENABLE) && !defined(NO_MUSIC_MODE)
+  music_all_notes_off();
   uint16_t timer_start = timer_read();
   PLAY_SONG(goodbye_song);
   shutdown_user();
@@ -158,7 +156,6 @@ void reset_keyboard(void) {
     wait_ms(1);
   stop_all_notes();
 #else
-  shutdown_user();
   wait_ms(250);
 #endif
 // this is also done later in bootloader.c - not sure if it's neccesary here
@@ -315,16 +312,8 @@ bool process_record_quantum(keyrecord_t *record) {
   #endif
   #if defined(RGBLIGHT_ENABLE) || defined(RGB_MATRIX_ENABLE)
   case RGB_TOG:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_toggle();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_MODE_FORWARD:
@@ -336,9 +325,6 @@ bool process_record_quantum(keyrecord_t *record) {
       else {
         rgblight_step();
       }
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_MODE_REVERSE:
@@ -350,87 +336,36 @@ bool process_record_quantum(keyrecord_t *record) {
       else {
         rgblight_step_reverse();
       }
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_HUI:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_increase_hue();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_HUD:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_decrease_hue();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_SAI:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_increase_sat();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_SAD:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_decrease_sat();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_VAI:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_increase_val();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_VAD:
-    // Split keyboards need to trigger on key-up for edge-case issue
-    #ifndef SPLIT_KEYBOARD
     if (record->event.pressed) {
-    #else
-    if (!record->event.pressed) {
-    #endif
       rgblight_decrease_val();
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_SPI:
@@ -446,9 +381,6 @@ bool process_record_quantum(keyrecord_t *record) {
   case RGB_MODE_PLAIN:
     if (record->event.pressed) {
       rgblight_mode(1);
-      #ifdef SPLIT_KEYBOARD
-          RGB_DIRTY = true;
-      #endif
     }
     return false;
   case RGB_MODE_BREATHE:
@@ -510,12 +442,7 @@ bool process_record_quantum(keyrecord_t *record) {
       }
     }
     return false;
-  case RGB_MODE_RGBTEST:
-    if (record->event.pressed) {
-      rgblight_mode(35);
-    }
-    return false;
-  #endif // defined(RGBLIGHT_ENABLE) || defined(RGB_MATRIX_ENABLE)
+  #endif
     #ifdef PROTOCOL_LUFA
     case OUT_AUTO:
       if (record->event.pressed) {
@@ -922,7 +849,7 @@ void matrix_init_quantum() {
     audio_init();
   #endif
   #ifdef RGB_MATRIX_ENABLE
-    rgb_matrix_init();
+    rgb_matrix_init_drivers();
   #endif
   matrix_init_kb();
 }
@@ -934,7 +861,7 @@ uint8_t rgb_matrix_task_counter = 0;
 #endif
 
 void matrix_scan_quantum() {
-  #if defined(AUDIO_ENABLE) && !defined(NO_MUSIC_MODE)
+  #if defined(AUDIO_ENABLE)
     matrix_scan_music();
   #endif
 
@@ -966,29 +893,14 @@ static const uint8_t backlight_pin = BACKLIGHT_PIN;
 
 // depending on the pin, we use a different output compare unit
 #if BACKLIGHT_PIN == B7
-#  define TCCRxA TCCR1A
-#  define TCCRxB TCCR1B
-#  define COMxx1 COM1C1
-#  define OCRxx  OCR1C
-#  define ICRx   ICR1
+#  define COM1x1 COM1C1
+#  define OCR1x  OCR1C
 #elif BACKLIGHT_PIN == B6
-#  define TCCRxA TCCR1A
-#  define TCCRxB TCCR1B
-#  define COMxx1 COM1B1
-#  define OCRxx  OCR1B
-#  define ICRx   ICR1
+#  define COM1x1 COM1B1
+#  define OCR1x  OCR1B
 #elif BACKLIGHT_PIN == B5
-#  define TCCRxA TCCR1A
-#  define TCCRxB TCCR1B
-#  define COMxx1 COM1A1
-#  define OCRxx  OCR1A
-#  define ICRx   ICR1
-#elif BACKLIGHT_PIN == C6
-#  define TCCRxA TCCR3A
-#  define TCCRxB TCCR3B
-#  define COMxx1 COM1A1
-#  define OCRxx  OCR3A
-#  define ICRx   ICR3
+#  define COM1x1 COM1A1
+#  define OCR1x  OCR1A
 #else
 #  define NO_HARDWARE_PWM
 #endif
@@ -1070,7 +982,7 @@ static uint16_t cie_lightness(uint16_t v) {
 
 // range for val is [0..TIMER_TOP]. PWM pin is high while the timer count is below val.
 static inline void set_pwm(uint16_t val) {
-	OCRxx = val;
+  OCR1x = val;
 }
 
 #ifndef BACKLIGHT_CUSTOM_DRIVER
@@ -1081,10 +993,10 @@ void backlight_set(uint8_t level) {
 
   if (level == 0) {
     // Turn off PWM control on backlight pin
-    TCCRxA &= ~(_BV(COMxx1));
+    TCCR1A &= ~(_BV(COM1x1));
   } else {
     // Turn on PWM control of backlight pin
-    TCCRxA |= _BV(COMxx1);
+    TCCR1A |= _BV(COM1x1);
   }
   // Set the brightness
   set_pwm(cie_lightness(TIMER_TOP * (uint32_t)level / BACKLIGHT_LEVELS));
@@ -1232,10 +1144,11 @@ void backlight_init_ports(void)
   "In fast PWM mode, the compare units allow generation of PWM waveforms on the OCnx pins. Setting the COMnx1:0 bits to two will produce a non-inverted PWM [..]."
   "In fast PWM mode the counter is incremented until the counter value matches either one of the fixed values 0x00FF, 0x01FF, or 0x03FF (WGMn3:0 = 5, 6, or 7), the value in ICRn (WGMn3:0 = 14), or the value in OCRnA (WGMn3:0 = 15)."
   */
-  TCCRxA = _BV(COMxx1) | _BV(WGM11); // = 0b00001010;
-  TCCRxB = _BV(WGM13) | _BV(WGM12) | _BV(CS10); // = 0b00011001;
+
+  TCCR1A = _BV(COM1x1) | _BV(WGM11); // = 0b00001010;
+  TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10); // = 0b00011001;
   // Use full 16-bit resolution. Counter counts to ICR1 before reset to 0.
-  ICRx = TIMER_TOP;
+  ICR1 = TIMER_TOP;
 
   backlight_init();
   #ifdef BACKLIGHT_BREATHING
@@ -1254,10 +1167,6 @@ __attribute__ ((weak))
 void backlight_set(uint8_t level) {}
 
 #endif // backlight
-
-#ifdef HD44780_ENABLED
-#include "hd44780.h"
-#endif
 
 
 // Functions for spitting out values

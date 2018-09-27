@@ -19,7 +19,7 @@
     #include "audio.h"
 #endif /* AUDIO_ENABLE */
 
-#if defined(RGBLIGHT_SLEEP) && defined(RGBLIGHT_ENABLE)
+#ifdef RGBLIGHT_SLEEP
   #include "rgblight.h"
 #endif
 
@@ -72,21 +72,6 @@ void suspend_idle(uint8_t time)
  */
 static uint8_t wdt_timeout = 0;
 
-/** \brief Run keyboard level Power down
- *
- * FIXME: needs doc
- */
-__attribute__ ((weak))
-void suspend_power_down_user (void) { }
-/** \brief Run keyboard level Power down
- *
- * FIXME: needs doc
- */
-__attribute__ ((weak))
-void suspend_power_down_kb(void) {
-  suspend_power_down_user();
-}
-
 /** \brief Power down
  *
  * FIXME: needs doc
@@ -112,14 +97,12 @@ static void power_down(uint8_t wdto)
         // This sometimes disables the start-up noise, so it's been disabled
 		// stop_all_notes();
 	#endif /* AUDIO_ENABLE */
-#if defined(RGBLIGHT_SLEEP) && defined(RGBLIGHT_ENABLE)
+#ifdef RGBLIGHT_SLEEP
 #ifdef RGBLIGHT_ANIMATIONS
   rgblight_timer_disable();
 #endif
-  rgblight_disable_noeeprom();
+  rgblight_disable();
 #endif
-  suspend_power_down_kb();
-
     // TODO: more power saving
     // See PicoPower application note
     // - I/O port input with pullup
@@ -161,21 +144,6 @@ bool suspend_wakeup_condition(void)
      return false;
 }
 
-/** \brief run user level code immediately after wakeup
- *
- * FIXME: needs doc
- */
-__attribute__ ((weak))
-void suspend_wakeup_init_user(void) { }
-
-/** \brief run keyboard level code immediately after wakeup
- *
- * FIXME: needs doc
- */
-__attribute__ ((weak))
-void suspend_wakeup_init_kb(void) {
-  suspend_wakeup_init_user();
-}
 /** \brief run immediately after wakeup
  *
  * FIXME: needs doc
@@ -188,13 +156,12 @@ void suspend_wakeup_init(void)
     backlight_init();
 #endif
 	led_set(host_keyboard_leds());
-#if defined(RGBLIGHT_SLEEP) && defined(RGBLIGHT_ENABLE)
-  rgblight_enable_noeeprom();
+#ifdef RGBLIGHT_SLEEP
+  rgblight_enable();
 #ifdef RGBLIGHT_ANIMATIONS
   rgblight_timer_enable();
 #endif
 #endif
-  suspend_wakeup_init_kb();
 }
 
 #ifndef NO_SUSPEND_POWER_DOWN
