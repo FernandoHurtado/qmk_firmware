@@ -1,4 +1,4 @@
-Let's Split
+Dactyl
 ======
 
 This readme and most of the code are from https://github.com/ahtn/tmk_keyboard/
@@ -68,7 +68,6 @@ Apart from diodes and key switches for the keyboard matrix in each half, you
 will need:
 
 * 2 Arduino Pro Micro's. You can find theses on aliexpress for ≈3.50USD each.
-* 2 TRRS sockets and 1 TRRS cable, or 2 TRS sockets and 1 TRS cable
 
 Alternatively, you can use any sort of cable and socket that has at least 3
 wires. If you want to use I2C to communicate between halves, you will need a
